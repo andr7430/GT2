@@ -5,6 +5,8 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Toast;
 
 import com.esri.android.geotrigger.GeotriggerApiClient;
@@ -82,9 +84,6 @@ public class GeotriggerActivity extends Activity implements
         mGeotriggerBroadcastReceiver = new GeotriggerBroadcastReceiver();
         mShouldCreateTrigger = false;
 
-
-
-
         JSONObject params = new JSONObject();
         try {
             params.put("addTags", "Campus");
@@ -109,7 +108,55 @@ public class GeotriggerActivity extends Activity implements
         locationService.setAccuracyCircleOn(false);
         locationService.setAutoPan(false);
         locationService.start();
+
+        //create a trigger by pressing
+        mMapView.setOnTouchListener(new MapOnTouchListener(this, mMapView){
+            @Override
+            public boolean onTouch(View v, MotionEvent event){
+                Toast.makeText(GeotriggerActivity.this, "Pressed...Creating Trigger..."+event.getX()+" "+event.getY()+" !",Toast.LENGTH_SHORT).show();
+
+                Location loc = new Location("app");
+                //loc.setLatitude(event.getX());
+                //loc.setLongitude(event.getY());
+
+                loc.setLatitude(0);
+                loc.setLongitude(0);
+
+
+                // The TriggerBuilder helps build JSON parameters for use with the
+                // 'trigger/create' API route.
+                JSONObject params2 = new TriggerBuilder()
+                        .setTags(GeotriggerService.getDeviceDefaultTag(GeotriggerActivity.this))
+                        .setGeo(loc, 100)
+                        .setDirection(TriggerBuilder.DIRECTION_ENTER)
+                        .setNotificationText("There is a cake here!")
+                        .build();
+
+                // Send the request to the Geotrigger API.
+                GeotriggerApiClient.runRequest(GeotriggerActivity.this, "trigger/create", params2,
+                        new GeotriggerApiListener() {
+                            @Override
+                            public void onSuccess(JSONObject data) {
+                                Toast.makeText(GeotriggerActivity.this, "Cake Trigger created!",
+                                        Toast.LENGTH_SHORT).show();
+                                Log.d(TAG, "Trigger Created");
+                            }
+
+                            @Override
+                            public void onFailure(Throwable e) {
+                                Log.d(TAG, "Error creating trigger!", e);
+                                // It didn't work, so we need to try again
+                                mShouldCreateTrigger = true;
+                            }
+                        });
+
+
+                return super.onTouch(v,event);
+            }
+
+        });
     }
+
 
     @Override
     public void onStart() {
@@ -171,36 +218,36 @@ public class GeotriggerActivity extends Activity implements
 
         // Create the trigger if we haven't done so already.
         if (mShouldCreateTrigger) {
-            // Set create trigger flag here so that we don't create multiple
-            // triggers if we get a few initial updates in rapid succession.
-            mShouldCreateTrigger = false;
-
-            // The TriggerBuilder helps build JSON parameters for use with the
-            // 'trigger/create' API route.
-            JSONObject params = new TriggerBuilder()
-                    .setTags(GeotriggerService.getDeviceDefaultTag(this))
-                    .setGeo(loc, 100)
-                    .setDirection(TriggerBuilder.DIRECTION_LEAVE)
-                    .setNotificationText("You left the trigger!")
-                    .build();
-
-            // Send the request to the Geotrigger API.
-            GeotriggerApiClient.runRequest(this, "trigger/create", params,
-                    new GeotriggerApiListener() {
-                        @Override
-                        public void onSuccess(JSONObject data) {
-                            Toast.makeText(GeotriggerActivity.this, "Trigger created!",
-                                    Toast.LENGTH_SHORT).show();
-                            Log.d(TAG, "Trigger Created");
-                        }
-
-                        @Override
-                        public void onFailure(Throwable e) {
-                            Log.d(TAG, "Error creating trigger!", e);
-                            // It didn't work, so we need to try again
-                            mShouldCreateTrigger = true;
-                        }
-                    });
+//            // Set create trigger flag here so that we don't create multiple
+//            // triggers if we get a few initial updates in rapid succession.
+//            mShouldCreateTrigger = false;
+//
+//            // The TriggerBuilder helps build JSON parameters for use with the
+//            // 'trigger/create' API route.
+//            JSONObject params = new TriggerBuilder()
+//                    .setTags(GeotriggerService.getDeviceDefaultTag(this))
+//                    .setGeo(loc, 100)
+//                    .setDirection(TriggerBuilder.DIRECTION_LEAVE)
+//                    .setNotificationText("You left the trigger!")
+//                    .build();
+//
+//            // Send the request to the Geotrigger API.
+//            GeotriggerApiClient.runRequest(this, "trigger/create", params,
+//                    new GeotriggerApiListener() {
+//                        @Override
+//                        public void onSuccess(JSONObject data) {
+//                            Toast.makeText(GeotriggerActivity.this, "Trigger created!",
+//                                    Toast.LENGTH_SHORT).show();
+//                            Log.d(TAG, "Trigger Created");
+//                        }
+//
+//                        @Override
+//                        public void onFailure(Throwable e) {
+//                            Log.d(TAG, "Error creating trigger!", e);
+//                            // It didn't work, so we need to try again
+//                            mShouldCreateTrigger = true;
+//                        }
+//                    });
         }
 
 
